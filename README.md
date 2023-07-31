@@ -1,4 +1,4 @@
-# Deepgram [Language] Starters
+# Deepgram Go Starters
 
 Please check out the starters contained in this repository, for examples of how to build Deepgram into your [Language] applications.
 
