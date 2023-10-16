@@ -42,7 +42,7 @@ deepgram_api_key=YOUR_KEY
 
 #### Run the application
 
-The `run` script will run a web and API server concurrently. Once running, you can [access the application in your browser](http://localhost:8081/).
+The `run` script will run a web and API server concurrently. Once running, you can [access the application in your browser](http://localhost:8080/).
 
 ```bash
 go run .
