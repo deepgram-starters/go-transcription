@@ -1,4 +1,4 @@
-module github.com/deepgram-go-starters
+module github.com/deepgram-go-starters/Starter-01
 
 go 1.20
 

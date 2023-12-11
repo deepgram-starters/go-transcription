@@ -2,9 +2,10 @@
 
 Please check out the starters contained in this repository, for examples of how to build Deepgram into your [Language] applications.
 
-- [Web App](./Starter-01/README.md)
-- [Websockets](./Starter-01/README.md)
-- [Command-line](./Starter-01/README.md)
+Starters:
+
+- [Transcription Via File Upload](./Starter-01/README.md)
+- [Virtual Scribe](./Starter-02/README.md)
 
 ## What is Deepgram?
 
