@@ -3,7 +3,7 @@
 [![Discord](https://dcbadge.vercel.app/api/server/xWRaCDBtW4?style=flat)](https://discord.gg/xWRaCDBtW4)
 
 
-Please check out the different starters contained in this repository, for examples of how to build Deepgram into your [Language] applications.
+Please check out the different starters contained in this repository, for examples of how to build Deepgram into your GO applications.
 
 - [Web App](./Starter-01/README.md)
 - [Websockets](./Starter-01/README.md)
