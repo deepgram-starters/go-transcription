@@ -1,0 +1,16 @@
+[meta]
+  title = "Pre-recorded Go Starter"
+  description = "Basic demo for using Deepgram to transcribe files with Go."
+  author = "Deepgram DX Team <devrel@deepgram.com> (https://developers.deepgram.com)"
+  useCase = "prerecorded"
+  language = "Go"
+
+[build]
+  command = "go get"
+
+[config]
+  sample = ".env-sample"
+  output = ".env"
+
+[post-build]
+  message = "Run `go run .` to get up and running."
