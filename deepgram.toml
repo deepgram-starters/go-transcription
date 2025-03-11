@@ -1,6 +1,6 @@
 [meta]
-  title = "Pre-recorded Go Starter"
-  description = "Basic demo for using Deepgram to transcribe files with Go."
+  title = "Go Transcription Starter"
+  description = "Get started using Deepgram's PreRecorded Transcription with this Go demo app"
   author = "Deepgram DX Team <devrel@deepgram.com> (https://developers.deepgram.com)"
   useCase = "prerecorded"
   language = "Go"
