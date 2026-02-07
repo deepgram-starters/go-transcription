@@ -2,8 +2,9 @@
   title = "Go Transcription Starter"
   description = "Get started using Deepgram's PreRecorded Transcription with this Go demo app"
   author = "Deepgram DX Team <devrel@deepgram.com> (https://developers.deepgram.com)"
-  useCase = "STT"
-  language = "Go"
+  useCase = "transcription"
+  language = "go"
+  tags = ["transcription", "stt", "speech-to-text", "asr", "pre-recorded", "go"]
 
 [build]
   command = "go get"
