@@ -217,16 +217,11 @@ func formatErrorResponse(errMsg string, statusCode int, code string) map[string]
 // SECTION 6: DEEPGRAM API CLIENT - Direct HTTP calls to Deepgram REST API
 // ============================================================================
 
-// callDeepgramTranscription sends audio bytes to the Deepgram /v1/listen
-// endpoint and returns the parsed JSON response. Query parameters control
-// model selection and feature flags.
-func callDeepgramTranscription(audioData []byte, params map[string]string) (map[string]interface{}, error) {
-	apiURL := "https://api.deepgram.com/v1/listen"
-
-	// Build URL with query parameters
-	u, err := url.Parse(apiURL)
+// buildDeepgramURL constructs the Deepgram /v1/listen URL with query parameters.
+func buildDeepgramURL(params map[string]string) (string, error) {
+	u, err := url.Parse("https://api.deepgram.com/v1/listen")
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse API URL: %w", err)
+		return "", fmt.Errorf("failed to parse API URL: %w", err)
 	}
 	q := u.Query()
 	for k, v := range params {
@@ -235,13 +230,12 @@ func callDeepgramTranscription(audioData []byte, params map[string]string) (map[
 		}
 	}
 	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
 
-	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(audioData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+// doDeepgramRequest sends a request to Deepgram and parses the JSON response.
+func doDeepgramRequest(req *http.Request) (map[string]interface{}, error) {
 	req.Header.Set("Authorization", "Token "+apiKey)
-	req.Header.Set("Content-Type", "application/octet-stream")
 
 	client := &http.Client{Timeout: 120 * time.Second}
 	resp, err := client.Do(req)
@@ -265,6 +259,44 @@ func callDeepgramTranscription(audioData []byte, params map[string]string) (map[
 	}
 
 	return result, nil
+}
+
+// callDeepgramTranscription sends audio bytes to the Deepgram /v1/listen
+// endpoint and returns the parsed JSON response.
+func callDeepgramTranscription(audioData []byte, params map[string]string) (map[string]interface{}, error) {
+	apiURL, err := buildDeepgramURL(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewReader(audioData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+
+	return doDeepgramRequest(req)
+}
+
+// callDeepgramTranscriptionURL sends a URL to Deepgram for remote transcription.
+func callDeepgramTranscriptionURL(audioURL string, params map[string]string) (map[string]interface{}, error) {
+	apiURL, err := buildDeepgramURL(params)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonBody, err := json.Marshal(map[string]string{"url": audioURL})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal URL body: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	return doDeepgramRequest(req)
 }
 
 // ============================================================================
@@ -385,25 +417,7 @@ func handleTranscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read uploaded file
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, formatErrorResponse(
-			"Either file or url must be provided", 400, "MISSING_INPUT",
-		))
-		return
-	}
-	defer file.Close()
-
-	audioData, err := io.ReadAll(file)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, formatErrorResponse(
-			"Failed to read uploaded file: "+err.Error(), 500, "TRANSCRIPTION_FAILED",
-		))
-		return
-	}
-
-	// Build query parameters from request query string
+	// Build query parameters from form values and query string
 	model := r.URL.Query().Get("model")
 	if model == "" {
 		model = r.FormValue("model")
@@ -429,14 +443,45 @@ func handleTranscription(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Call Deepgram REST API
-	dgResponse, err := callDeepgramTranscription(audioData, params)
-	if err != nil {
-		log.Printf("Transcription error: %v", err)
-		writeJSON(w, http.StatusInternalServerError, formatErrorResponse(
-			"An error occurred during transcription", 500, "TRANSCRIPTION_FAILED",
-		))
-		return
+	// Check for URL-based transcription first, then fall back to file upload
+	var dgResponse map[string]interface{}
+	audioURL := r.FormValue("url")
+	if audioURL != "" {
+		var err error
+		dgResponse, err = callDeepgramTranscriptionURL(audioURL, params)
+		if err != nil {
+			log.Printf("URL transcription error: %v", err)
+			writeJSON(w, http.StatusInternalServerError, formatErrorResponse(
+				"An error occurred during transcription", 500, "TRANSCRIPTION_FAILED",
+			))
+			return
+		}
+	} else {
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, formatErrorResponse(
+				"Either file or url must be provided", 400, "MISSING_INPUT",
+			))
+			return
+		}
+		defer file.Close()
+
+		audioData, err := io.ReadAll(file)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, formatErrorResponse(
+				"Failed to read uploaded file: "+err.Error(), 500, "TRANSCRIPTION_FAILED",
+			))
+			return
+		}
+
+		dgResponse, err = callDeepgramTranscription(audioData, params)
+		if err != nil {
+			log.Printf("Transcription error: %v", err)
+			writeJSON(w, http.StatusInternalServerError, formatErrorResponse(
+				"An error occurred during transcription", 500, "TRANSCRIPTION_FAILED",
+			))
+			return
+		}
 	}
 
 	// Format and return response
